@@ -4,6 +4,12 @@ if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
     exit();
 }
+
+// Tạo Nonce ngẫu nhiên nếu chưa có để bảo mật
+if (!isset($_SESSION['nonce'])) {
+    $_SESSION['nonce'] = bin2hex(random_bytes(16));
+}
+$nonce = $_SESSION['nonce'];
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -51,7 +57,9 @@ if (!isset($_SESSION['user_id'])) {
             await provider.send("eth_requestAccounts", []);
             const signer = provider.getSigner();
 
-            const message = "Xác nhận đăng nhập vào 2FA DApp System\nTimestamp: " + new Date().getTime();
+            // Lấy nonce từ PHP session đã render ra
+            const nonce = "<?php echo $nonce; ?>";
+            const message = "Xác nhận đăng nhập vào 2FA DApp System\nNonce: " + nonce + "\nTimestamp: " + new Date().getTime();
             const signature = await signer.signMessage(message);
             const address = await signer.getAddress();
 
@@ -60,7 +68,8 @@ if (!isset($_SESSION['user_id'])) {
                 headers: {"Content-Type": "application/json"},
                 body: JSON.stringify({
                     address: address,
-                    signature: signature
+                    signature: signature,
+                    message: message
                 })
             });
 
